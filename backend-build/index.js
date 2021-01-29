@@ -8,7 +8,6 @@ var dotenv_1 = __importDefault(require("dotenv"));
 var cors_1 = __importDefault(require("cors"));
 var cookie_parser_1 = __importDefault(require("cookie-parser"));
 var body_parser_1 = __importDefault(require("body-parser"));
-var path_1 = __importDefault(require("path"));
 if (process.env.NODE_ENV !== "production") {
     //We don't need dotenv when in production
     dotenv_1.default.config();
@@ -45,16 +44,17 @@ app.use("/api", authenticated_1.default);
 //and none of the routes afterwards will work. By putting it last, we could send an error and get a new access token with "/token"
 app.use("/api", authentication_1.authenticateToken);
 //All other roues will be handled by
-app.use(express_1.default.static(path_1.default.join(__dirname, "build")));
-app.get("*", function (req, res) {
-    res.sendFile(path_1.default.join(__dirname, "build", "index.html"));
-});
+// app.use(express.static(path.join(__dirname, "build")));
+// app.get("*", function (req, res) {
+//     res.sendFile(path.join(__dirname, "build", "index.html"));
+// });
 // const root = require("path").join(__dirname, "build");
 // app.use(express.static(root));
 // app.get("*", (req, res) => {
 //     res.sendFile("index.html", { root });
 // });
-var port = 5000;
+var port = process.env.PORT || 5000;
+//process.env.PORT is default port heroku gives us
 //app.use(errorHandler);
 app.listen(port, function () {
     console.log("App running on port " + port + ".");

@@ -90,9 +90,7 @@ var refreshToken = function (req, res) { return __awaiter(void 0, void 0, void 0
                 //     `ACCESS_TOKEN=${token}; samesite=lax;`,
                 // ]);
                 //Chrome's default settings for cookie is samesite=lax; to avoid CSRF attacks
-                //We should leave it sameSite=Strict, but I'm having trouble deploying
-                //the api and client at the same domain in Vercel via react's proxy, so I'm going to enable sameSite=none (which makes CSRF attacks possible)
-                //because my life is too short :)
+                //We should make it sameSite=Strict,
                 res.cookie(ACCESS_TOKEN, token, {
                     secure: true,
                     sameSite: "strict",
@@ -174,14 +172,7 @@ var signIn = function (req, res) {
             //     `REFRESH_TOKEN=${refreshToken}; httponly;`,
             // ]);
             //Chrome's default settings for cookie is samesite=Strict (to avoid CSRF attacks) and Secure
-            //We should leave it sameSite=Strict to avoid CSRF attacks, but I'm having trouble deploying
-            //the api and client at the same domain in Vercel via react's proxy, so I'm going to enable sameSite=none (which makes CSRF attacks possible)
-            //because my life is too short :)
-            //GOOD PRACTICE (NOT EXPOSED TO CSRF ATTACKS):
-            // res.cookie(REFRESH_TOKEN, refreshToken, {
-            //     httpOnly: true,
-            //     sameSite: true,
-            // });
+            //We should leave it samesite=strict
             res.cookie(REFRESH_TOKEN, refreshToken_1, {
                 sameSite: "strict",
                 secure: true,
@@ -195,7 +186,6 @@ var signIn = function (req, res) {
             // res.cookie(REFRESH_TOKEN, refreshToken, {
             //     httpOnly: true,
             // });
-            // //For development, we remove secure because it's on http:
             // res.cookie(ACCESS_TOKEN, token);
             res.send({
                 token: token_1,
@@ -209,7 +199,7 @@ var signIn = function (req, res) {
 };
 exports.signIn = signIn;
 var signUp = function (req, res, next) { return __awaiter(void 0, void 0, void 0, function () {
-    var email, password, firstName, lastName, UNPROCESSABLE_ENTITY_STATUS, checkEmailResponse, saltRounds, hash, hashedPassword, error_1, error_2;
+    var email, password, firstName, lastName, refreshToken_2, token, UNPROCESSABLE_ENTITY_STATUS, checkEmailResponse, saltRounds, hash, hashedPassword, error_1, error_2;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -218,6 +208,8 @@ var signUp = function (req, res, next) { return __awaiter(void 0, void 0, void 0
                 password = req.body.password;
                 firstName = req.body.firstName;
                 lastName = req.body.lastName;
+                refreshToken_2 = generateRefreshToken(email, PRIVATE_KEY);
+                token = generateAccessToken(email, PRIVATE_KEY);
                 UNPROCESSABLE_ENTITY_STATUS = 422;
                 //Email or password not given
                 if (!email || !password) {
@@ -253,16 +245,32 @@ var signUp = function (req, res, next) { return __awaiter(void 0, void 0, void 0
                 //Using transactions with psql pool:
                 //https://kb.objectrocket.com/postgresql/nodejs-and-the-postgres-transaction-968
                 _a.sent();
-                return [4 /*yield*/, databasePool_1.default.query(" INSERT INTO auth(email, password)VALUES($1, $2)", [email, hashedPassword])];
+                return [4 /*yield*/, databasePool_1.default.query(" INSERT INTO auth(email, password, refresh_token)VALUES($1, $2, $3)", [email, hashedPassword, refreshToken_2])];
             case 6:
                 _a.sent();
-                return [4 /*yield*/, databasePool_1.default.query(" INSERT INTO user_info(first_name, last_name, email)VALUES($1, $2, $3);", [firstName, lastName, email])];
+                return [4 /*yield*/, databasePool_1.default.query("INSERT INTO user_info(first_name, last_name, email)VALUES($1, $2, $3);", [firstName, lastName, email])];
             case 7:
                 _a.sent();
                 databasePool_1.default.query("COMMIT");
                 //Generate a token when user signs in, this token will be used so that they can access protected routes
+                //Chrome's default settings for cookie is samesite=Strict (to avoid CSRF attacks) and Secure
+                //We should make it samesite=strict
+                res.cookie(REFRESH_TOKEN, refreshToken_2, {
+                    sameSite: "strict",
+                    secure: true,
+                    httpOnly: true,
+                });
+                res.cookie(ACCESS_TOKEN, token, {
+                    sameSite: "strict",
+                    secure: true,
+                });
+                //For development, we remove secure because it's on http:
+                // res.cookie(REFRESH_TOKEN, refreshToken, {
+                //     httpOnly: true,
+                // });
+                // res.cookie(ACCESS_TOKEN, token);
                 res.send({
-                    token: generateAccessToken(email, PRIVATE_KEY),
+                    token: token,
                 });
                 return [3 /*break*/, 9];
             case 8:

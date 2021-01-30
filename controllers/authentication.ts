@@ -16,7 +16,9 @@ const generateAccessToken = (email: string, privateKey: string) => {
     //for example, if our email variable is super long, our token might be super long
 
     return jwt.sign({ subject: email }, privateKey, {
-        expiresIn: "15s",
+        // expiresIn: "15s",
+        expiresIn: "30d", //refer to: https://stackoverflow.com/questions/3185525/oauth-access-token-expiration-period
+        //30d because the server calls I hosted my api/db are very limited
     });
 };
 
